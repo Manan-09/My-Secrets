@@ -14,16 +14,17 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
+
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
-    private final AuthenticationManager authenticationManager;
-    private final JWTService jwtService;
+    private AuthenticationManager authenticationManager;
+    private JWTService jwtService;
 
     @Autowired
     public JwtAuthenticationFilter(AuthenticationManager authenticationManager, JWTService jwtService) {
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
-        setFilterProcessesUrl("/api/public/authenticate"); // Set the login URL
+        setFilterProcessesUrl("/api/public/v1/login"); // Set the login URL
     }
 
     @Override
