@@ -2,66 +2,52 @@ package dev.manan.mysecrets.configuration;
 
 
 import dev.manan.mysecrets.service.JWTService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
+@Component
+@RequiredArgsConstructor
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
+    private final JWTService jwtService;
+    private final UserDetailsService userDetailsService;
 
-    private AuthenticationManager authenticationManager;
-    private JWTService jwtService;
-
-    @Autowired
-    public JwtAuthenticationFilter(AuthenticationManager authenticationManager, JWTService jwtService) {
-        this.authenticationManager = authenticationManager;
-        this.jwtService = jwtService;
-        setFilterProcessesUrl("/api/public/v1/login"); // Set the login URL
-    }
 
     @Override
-    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) {
-        try {
-            // Parse user credentials from the request
-            String username = request.getParameter("username");
-            String password = request.getParameter("password");
-
-            // Create an authentication token
-            Authentication authentication = new UsernamePasswordAuthenticationToken(username, password);
-
-            // Authenticate the user
-            return authenticationManager.authenticate(authentication);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        String authHeader = request.getHeader("Authorization");
+        String token = null;
+        String username = null;
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7);
+            username = jwtService.extractUsername(token);
         }
-    }
 
-    @Override
-    protected void successfulAuthentication(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain chain,
-            Authentication authResult
-    ) throws IOException {
-        // Generate JWT token and add it to the response
-        String token = jwtService.generateToken(authResult);
-        response.addHeader("Authorization", "Bearer " + token);
-    }
-
-    @Override
-    protected void unsuccessfulAuthentication(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            AuthenticationException failed
-    ) throws IOException {
-        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication failed");
+        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            if (jwtService.validateToken(token, userDetails)) {
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+            }
+        }
+        filterChain.doFilter(request, response);
     }
 }
