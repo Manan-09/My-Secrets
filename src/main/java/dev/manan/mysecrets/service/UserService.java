@@ -1,5 +1,6 @@
 package dev.manan.mysecrets.service;
 
+import dev.manan.mysecrets.dto.CreateUserDTO;
 import dev.manan.mysecrets.entity.User;
 import dev.manan.mysecrets.repo.UserRepo;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +22,8 @@ public class UserService implements UserDetailsService {
         return userRepo.findByUsername(username).orElseThrow();
     }
 
-    public User createUser(User user) {
+    public User createUser(CreateUserDTO createUserDTO) {
+        User user = User.from(createUserDTO);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         return userRepo.insert(user);
     }
