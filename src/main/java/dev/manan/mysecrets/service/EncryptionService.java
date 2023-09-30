@@ -21,13 +21,15 @@ public class EncryptionService {
     public EncryptionService(@Value("${encryption.secret.key}") String key) {
         try {
             byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
-            secretKey = new SecretKeySpec(keyBytes, "AES"); // Assign to the class-level field
+            secretKey = new SecretKeySpec(keyBytes, "AES");
             cipher = Cipher.getInstance(ENCRYPTION_ALGORITHM);
             cipher.init(Cipher.ENCRYPT_MODE, secretKey);
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
+        } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Error initializing encryption service", e);
+        } catch (NoSuchPaddingException e) {
+            e.printStackTrace();
         } catch (InvalidKeyException e) {
-            throw new RuntimeException("Error initializing encryption service", e);
+            e.printStackTrace();
         }
     }
 
@@ -44,7 +46,7 @@ public class EncryptionService {
         try {
             byte[] decodedBytes = Base64.getDecoder().decode(encryptedData);
             byte[] decryptedBytes = cipher.doFinal(decodedBytes);
-            return new String(decryptedBytes, StandardCharsets.UTF_8);
+            return new String(decryptedBytes);
         } catch (IllegalBlockSizeException | BadPaddingException e) {
             throw new RuntimeException("Error decrypting data", e);
         }
