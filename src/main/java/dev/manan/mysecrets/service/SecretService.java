@@ -21,13 +21,14 @@ public class SecretService {
     private final EncryptionService encryptionService;
     private final SecretMongoRepo secretMongoRepo;
 
-    @CacheEvict(value = "SecretResponseDTO", key = "#secretRequestDTO.username")
-    public SecretResponseDTO saveSecret(SecretRequestDTO secretRequestDTO) {
-        Secret secret = fetchSecretRaw(secretRequestDTO.getUsername());
+    @CacheEvict(value = "SecretResponseDTO", key = "#username")
+    public SecretResponseDTO saveSecret(String username, SecretRequestDTO secretRequestDTO) {
+        Secret secret = fetchSecretRaw(username);
         if( nonNull(secret) ) {
             secret.setSecretDecoded(secretRequestDTO.getSecretDecoded());
         } else {
             secret = Secret.from(secretRequestDTO);
+            secret.setUsername(username);
         }
         secret.initializeAuditFields();
         secret.setSecretsEncoded(encodeData(secret.getSecretDecoded()));

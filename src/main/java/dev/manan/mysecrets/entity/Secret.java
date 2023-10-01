@@ -27,7 +27,6 @@ public class Secret extends AuditableEntity{
 
     public static Secret from(SecretRequestDTO secretRequestDTO) {
         Secret secret = new Secret();
-        secret.setUsername(secretRequestDTO.getUsername());
         secret.setSecretDecoded(secretRequestDTO.getSecretDecoded());
         secret.initializeAuditFields();
         return secret;

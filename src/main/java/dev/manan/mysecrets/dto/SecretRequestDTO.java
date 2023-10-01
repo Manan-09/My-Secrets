@@ -13,6 +13,5 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SecretRequestDTO {
-    private String username;
     private Map<String, String> secretDecoded;
 }
