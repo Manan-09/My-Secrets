@@ -3,9 +3,10 @@ package dev.manan.mysecrets.service;
 import dev.manan.mysecrets.dto.SecretRequestDTO;
 import dev.manan.mysecrets.dto.SecretResponseDTO;
 import dev.manan.mysecrets.entity.Secret;
-import dev.manan.mysecrets.repo.SecretRepo;
+import dev.manan.mysecrets.repo.SecretMongoRepo;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.annotation.Order;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -18,8 +19,9 @@ import static java.util.Objects.nonNull;
 public class SecretService {
 
     private final EncryptionService encryptionService;
-    private final SecretRepo secretRepo;
+    private final SecretMongoRepo secretMongoRepo;
 
+    @CacheEvict(value = "SecretResponseDTO", key = "#secretRequestDTO.username")
     public SecretResponseDTO saveSecret(SecretRequestDTO secretRequestDTO) {
         Secret secret = fetchSecretRaw(secretRequestDTO.getUsername());
         if( nonNull(secret) ) {
@@ -29,18 +31,19 @@ public class SecretService {
         }
         secret.initializeAuditFields();
         secret.setSecretsEncoded(encodeData(secret.getSecretDecoded()));
-        secretRepo.save(secret);
+        secretMongoRepo.save(secret);
         return secret.toResponse();
     }
 
+    @Cacheable(value = "SecretResponseDTO", key = "#username")
     public SecretResponseDTO fetchSecret(String username) {
-        Secret secret = secretRepo.findByUsername(username).orElseThrow();
+        Secret secret = secretMongoRepo.findByUsername(username).orElseThrow();
         secret.setSecretDecoded(decodeData(secret.getSecretsEncoded()));
         return secret.toResponse();
     }
 
     private Secret fetchSecretRaw(String username) {
-        return secretRepo.findByUsername(username).orElse(null);
+        return secretMongoRepo.findByUsername(username).orElse(null);
     }
 
     private Map<String, String> encodeData(Map<String, String> secretData) {
