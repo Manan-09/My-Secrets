@@ -19,11 +19,6 @@ public class SecretController {
 
     private final SecretService secretService;
 
-    @GetMapping("/hello")
-    public ResponseEntity<?> hello(HttpServletResponse response) {
-        return ResponseEntity.ok("Hello"+response.getHeader(USERNAME));
-    }
-
     @PostMapping("/secrets")
     public ResponseEntity<SecretResponseDTO> saveSecret(@RequestBody SecretRequestDTO secretRequestDTO, HttpServletResponse response) {
         return ResponseEntity.ok(secretService.saveSecret(response.getHeader(USERNAME), secretRequestDTO));
